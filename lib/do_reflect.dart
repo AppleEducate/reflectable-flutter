@@ -7,16 +7,19 @@
 
 import 'dart:ui';
 
-@GlobalQuantifyCapability(r'\.Color$', myReflectable)
+import 'package:flutter/material.dart';
+
+@GlobalQuantifyCapability(r'\.Scaffold$', refector)
+@GlobalQuantifyCapability(r'\.Color$', refector)
 import 'package:reflectable/reflectable.dart';
 
 class MyReflectable extends Reflectable {
-  const MyReflectable() : super(invokingCapability);
+  const MyReflectable() : super(invokingCapability, declarationsCapability);
 }
 
-const myReflectable = const MyReflectable();
+const refector = const MyReflectable();
 
-@myReflectable
+@refector
 class A {
   A(this.value);
 
@@ -27,7 +30,10 @@ class A {
   int argNamed(int x, int y, {int z: 42}) => x + y - z;
   int operator +(x) => value + x;
   int operator [](x) => value + x;
-  void operator []=(x, v) { f = x + v; }
+  void operator []=(x, v) {
+    f = x + v;
+  }
+
   int operator -() => -f;
   int operator ~() => f + value;
 
@@ -39,45 +45,27 @@ class A {
   static int namedArguments(int x, int y, {int z: 42}) => x + y - z;
 }
 
-String doReflect(int i) {
-  List<int> result = [];
+void createObjects(List<Object> objs) {
+  objs.forEach((element) {
+    ObjectMirror colorMirror = refector.reflect(element);
+  });
+}
 
-  // Get hold of a few mirrors.
-  A instance = new A(i);
-  InstanceMirror instanceMirror = myReflectable.reflect(instance);
-  ClassMirror classMirror = myReflectable.reflectType(A);
+List<String> getConstructorOptions(Type type) {
+  ClassMirror mirror = refector.reflectType(type);
 
-  // Invocations of methods accepting positional arguments.
-  result.add(instanceMirror.invoke("arg0", []));
-  result.add(instanceMirror.invoke("arg1", [84]));
-  result.add(instanceMirror.invoke("arg1to3", [40, 2]));
-  result.add(instanceMirror.invoke("arg1to3", [1, -1, 1]));
-  result.add(instanceMirror.invoke("arg1to3", [21, 21, 0, "foo"]));
-
-  // Invocations of methods accepting named arguments.
-  result.add(instanceMirror.invoke("argNamed", [55, 29]));
-  result.add(instanceMirror.invoke("argNamed", [21, 21], {#z: 0}));
-
-  // Invocations of operators.
-  result.add(instanceMirror.invoke("+", [42])); // '84'.
-  result.add(instanceMirror.invoke("[]", [42])); // '84'.
-  instanceMirror.invoke("[]=", [1, 2]);
-  result.add(instance.f); // '3'.
-  result.add(instanceMirror.invoke("unary-", [])); // '-3'.
-  result.add(instanceMirror.invoke("~", [])); // '5'.
-
-  // Similar invocations on static methods.
-  result.add(classMirror.invoke("noArguments", []));
-  result.add(classMirror.invoke("oneArgument", [84+i]));
-  result.add(classMirror.invoke("optionalArguments", [40, i]));
-  result.add(classMirror.invoke("optionalArguments", [1, -1, i]));
-  result.add(classMirror.invoke("optionalArguments", [21, i, 0, "foo"]));
-  result.add(classMirror.invoke("namedArguments", [55, 29 + i]));
-  result.add(classMirror.invoke("namedArguments", [21, 21], {#z: i}));
-
-  return result.toString();
-
-  // Use a declaration in 'dart:ui'.
-  Color color = Color(0xFF42A5F5);
-  ObjectMirror colorMirror = myReflectable.reflect(color);
+  List<DeclarationMirror> constructors =
+      new List.from(mirror.declarations.values.where((declare) {
+    return declare is MethodMirror && declare.isConstructor;
+  }));
+  List<String> _options = [];
+  constructors.forEach((construtor) {
+    if (construtor is MethodMirror) {
+      List<ParameterMirror> parameters = construtor.parameters;
+      parameters.forEach((param) {
+        _options.add(param.simpleName);
+      });
+    }
+  });
+  return _options;
 }
