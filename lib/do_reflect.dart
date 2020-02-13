@@ -5,12 +5,10 @@
 // Try out some reflective invocations.
 // Build with `cd ..; pub run build_runner build example`.
 
-import 'dart:ui';
-
-import 'package:flutter/material.dart';
-
+// List All Objects!
 @GlobalQuantifyCapability(r'\.Scaffold$', refector)
 @GlobalQuantifyCapability(r'\.Color$', refector)
+
 import 'package:reflectable/reflectable.dart';
 
 class MyReflectable extends Reflectable {
@@ -18,32 +16,6 @@ class MyReflectable extends Reflectable {
 }
 
 const refector = const MyReflectable();
-
-@refector
-class A {
-  A(this.value);
-
-  int value;
-  int arg0() => value;
-  int arg1(int x) => x - value;
-  int arg1to3(int x, int y, [int z = 0, w]) => x + y + z * value;
-  int argNamed(int x, int y, {int z: 42}) => x + y - z;
-  int operator +(x) => value + x;
-  int operator [](x) => value + x;
-  void operator []=(x, v) {
-    f = x + v;
-  }
-
-  int operator -() => -f;
-  int operator ~() => f + value;
-
-  int f = 0;
-
-  static int noArguments() => 42;
-  static int oneArgument(x) => x - 42;
-  static int optionalArguments(x, y, [z = 0, w]) => x + y + z * 42;
-  static int namedArguments(int x, int y, {int z: 42}) => x + y - z;
-}
 
 void createObjects(List<Object> objs) {
   objs.forEach((element) {
